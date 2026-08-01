@@ -193,15 +193,15 @@ class SoundManager {
     }, 20);
   }
 
-  // Smart Audio Ducking: drops global background song volume to near silent (0.001) when voiceover plays
+  // Smart Audio Ducking: lowers global background song to very low 2% volume inside any room
   duckAmbient() {
     this.isDucked = true;
     if (this.bgAudio) {
-      this.fadeBgTo(0.001, 200);
+      this.fadeBgTo(0.02, 250);
     }
   }
 
-  // Smart Audio Unducking: restores global background song volume to normal (35%) when voiceover ends/pauses
+  // Smart Audio Unducking: restores global background song volume to normal 35% in hallway & main scenes
   unduckAmbient() {
     this.isDucked = false;
     if (this.bgAudio) {

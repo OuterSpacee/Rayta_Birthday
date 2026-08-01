@@ -118,11 +118,18 @@ export default function FriendRoom2D({ roomId }: FriendRoom2DProps) {
   const [howlInstance, setHowlInstance] = useState<Howl | null>(null);
   const [tilt, setTilt] = useState({ x: 0, y: 0 });
 
+  // Lower background music volume immediately on entering ANY room, restore on exit
   useEffect(() => {
     soundManager.startAmbient();
+    soundManager.duckAmbient();
+
     if (friend) {
       visitRoom(friend.id);
     }
+
+    return () => {
+      soundManager.unduckAmbient();
+    };
   }, [friend, visitRoom]);
 
   // Mouse Parallax 3D Tilt Illusion
@@ -141,7 +148,6 @@ export default function FriendRoom2D({ roomId }: FriendRoom2DProps) {
   // Cleanup audio on unmount
   useEffect(() => {
     return () => {
-      soundManager.unduckAmbient();
       if (howlInstance) {
         howlInstance.stop();
       }
@@ -157,12 +163,8 @@ export default function FriendRoom2D({ roomId }: FriendRoom2DProps) {
     if (playing) {
       howlInstance?.stop();
       setPlaying(false);
-      soundManager.unduckAmbient();
       return;
     }
-
-    // Duck global background song volume during voiceover playback
-    soundManager.duckAmbient();
 
     const sound = new Howl({
       src: [friend.audioSrc],
@@ -170,13 +172,11 @@ export default function FriendRoom2D({ roomId }: FriendRoom2DProps) {
       html5: true,
       onend: () => {
         setPlaying(false);
-        soundManager.unduckAmbient();
         visitRoom(friend.id);
       },
       onloaderror: () => {
         setTimeout(() => {
           setPlaying(false);
-          soundManager.unduckAmbient();
           visitRoom(friend.id);
         }, 3500);
       },
@@ -188,7 +188,6 @@ export default function FriendRoom2D({ roomId }: FriendRoom2DProps) {
   };
 
   const handleExit = () => {
-    soundManager.unduckAmbient();
     if (howlInstance) howlInstance.stop();
     startTransition(() => {
       exitRoom();
