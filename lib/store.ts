@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import { CONFIG } from './config';
 
 export type SceneName =
   | 'intro'
@@ -63,9 +64,7 @@ export const useBirthdayStore = create<BirthdayState>((set, get) => ({
   setMicAllowed: (allowed) => set({ micAllowed: allowed }),
 
   allRoomsVisited: () => {
-    // This is a derived check, not stored state
     const { roomsVisited } = get();
-    // We import CONFIG.friends.length elsewhere; here we just expose the check
-    return roomsVisited.length >= 10;
+    return roomsVisited.length >= CONFIG.friends.length;
   },
 }));

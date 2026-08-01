@@ -1,0 +1,11 @@
+.container {
+  position: relative;
+  background: var(--surface-deep);
+}
+
+.text {
+  font-family: var(--font-retro);
+  font-size: clamp(48px, 10vw, 96px);
+  color: var(--accent-crimson);
+  text-shadow: var(--glow-crimson-text);
+}
