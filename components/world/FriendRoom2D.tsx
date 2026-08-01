@@ -138,6 +138,7 @@ export default function FriendRoom2D({ roomId }: FriendRoom2DProps) {
   // Cleanup audio on unmount
   useEffect(() => {
     return () => {
+      soundManager.unduckAmbient();
       if (howlInstance) {
         howlInstance.stop();
       }
@@ -153,19 +154,25 @@ export default function FriendRoom2D({ roomId }: FriendRoom2DProps) {
     if (playing) {
       howlInstance?.stop();
       setPlaying(false);
+      soundManager.unduckAmbient();
       return;
     }
+
+    // Duck global background song volume during voiceover playback
+    soundManager.duckAmbient();
 
     const sound = new Howl({
       src: [friend.audioSrc],
       html5: true,
       onend: () => {
         setPlaying(false);
+        soundManager.unduckAmbient();
         visitRoom(friend.id);
       },
       onloaderror: () => {
         setTimeout(() => {
           setPlaying(false);
+          soundManager.unduckAmbient();
           visitRoom(friend.id);
         }, 3500);
       },
@@ -177,6 +184,7 @@ export default function FriendRoom2D({ roomId }: FriendRoom2DProps) {
   };
 
   const handleExit = () => {
+    soundManager.unduckAmbient();
     if (howlInstance) howlInstance.stop();
     startTransition(() => {
       exitRoom();

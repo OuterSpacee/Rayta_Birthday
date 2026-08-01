@@ -43,19 +43,17 @@ class SoundManager {
       // Silent fallback
     }
 
-    // Additional synthesized fallback for firework if audio file is stub
     if (name === 'firework') {
       this.playFireworkExplosion();
     }
   }
 
-  // Synthesized Firework Explosion Sound (Deep boom + sparkling noise)
+  // Synthesized Firework Explosion Sound
   playFireworkExplosion() {
     try {
       const ctx = this.getAudioContext();
       const now = ctx.currentTime;
 
-      // 1. Deep Boom Sine Oscillator
       const osc = ctx.createOscillator();
       const oscGain = ctx.createGain();
 
@@ -72,7 +70,6 @@ class SoundManager {
       osc.start(now);
       osc.stop(now + 0.5);
 
-      // 2. Sparkling White Noise Burst
       const bufferSize = ctx.sampleRate * 0.3;
       const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
       const output = buffer.getChannelData(0);
@@ -126,13 +123,13 @@ class SoundManager {
     }
   }
 
-  // Continuous background ambient music loop
+  // Continuous background ambient music loop ("Rayta At Nineteen.mp3")
   startAmbient() {
     if (this.ambient) return;
 
     try {
       this.ambient = new Howl({
-        src: [CONFIG.assets.sfx.ambient],
+        src: ['/audio/sfx/rayta-at-nineteen.mp3', CONFIG.assets.sfx.ambient],
         loop: true,
         volume: 0,
         html5: true,
@@ -141,13 +138,27 @@ class SoundManager {
         },
       });
       this.ambient.play();
-      this.ambient.fade(0, this.volume * 0.4, 2000);
+      this.ambient.fade(0, this.volume * 0.35, 2000);
     } catch (e) {
       this.startSynthesizedAmbient();
     }
   }
 
-  // Web Audio synthesized warm ambient synth pad loop
+  // Smart Audio Ducking: lowers global background song when voiceover plays
+  duckAmbient() {
+    if (this.ambient) {
+      this.ambient.fade(this.ambient.volume(), 0.06, 400);
+    }
+  }
+
+  // Smart Audio Unducking: restores global background song volume when voiceover ends/pauses
+  unduckAmbient() {
+    if (this.ambient) {
+      this.ambient.fade(this.ambient.volume(), this.volume * 0.35, 500);
+    }
+  }
+
+  // Web Audio synthesized warm ambient synth pad loop fallback
   private startSynthesizedAmbient() {
     try {
       if (this.ambientOsc) return;
@@ -193,7 +204,7 @@ class SoundManager {
     this.volume = val;
     this.sfx.forEach((howl) => howl.volume(val));
     if (this.ambient) {
-      this.ambient.volume(val * 0.4);
+      this.ambient.volume(val * 0.35);
     }
   }
 }
