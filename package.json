@@ -1,0 +1,29 @@
+{
+  "name": "rayta-birthday",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start"
+  },
+  "dependencies": {
+    "@react-three/drei": "^10",
+    "@react-three/fiber": "^9",
+    "framer-motion": "^12",
+    "howler": "^2.2.4",
+    "next": "16.2.12",
+    "react": "19.2.4",
+    "react-dom": "19.2.4",
+    "three": "^0.175",
+    "zustand": "^5"
+  },
+  "devDependencies": {
+    "@types/howler": "^2",
+    "@types/node": "^20.19.43",
+    "@types/react": "^19.2.18",
+    "@types/react-dom": "^19",
+    "@types/three": "^0.175",
+    "typescript": "^6.0.3"
+  }
+}
