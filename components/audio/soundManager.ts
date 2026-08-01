@@ -7,12 +7,12 @@ type SfxName = keyof typeof CONFIG.assets.sfx;
 
 class SoundManager {
   private sfx: Map<SfxName, Howl> = new Map();
-  private ambient: Howl | null = null;
+  private bgAudio: HTMLAudioElement | null = null;
   private volume: number = 0.5;
   private audioCtx: AudioContext | null = null;
   private ambientOsc: OscillatorNode | null = null;
   private isDucked: boolean = false;
-  private fadeInterval: NodeJS.Timeout | null = null;
+  private fadeInterval: any = null;
 
   private getAudioContext(): AudioContext {
     if (!this.audioCtx) {
@@ -125,75 +125,64 @@ class SoundManager {
     }
   }
 
-  // Continuous background ambient music loop ("Rayta At Nineteen.mp3")
+  // Continuous global background ambient music ("Rayta At Nineteen.mp3") via native HTMLAudioElement
   startAmbient() {
-    if (this.ambient) return;
+    if (typeof window === 'undefined') return;
+
+    if (this.bgAudio) {
+      if (this.bgAudio.paused) {
+        this.bgAudio.play().catch(() => {});
+      }
+      return;
+    }
 
     try {
-      this.ambient = new Howl({
-        src: ['/audio/sfx/rayta-at-nineteen.mp3', CONFIG.assets.sfx.ambient],
-        loop: true,
-        volume: 0,
-        html5: true,
-        onloaderror: () => {
-          this.startSynthesizedAmbient();
-        },
-      });
-      this.ambient.play();
-      this.fadeAmbientTo(this.volume * 0.35, 2000);
+      const audio = new Audio('/audio/sfx/rayta-at-nineteen.mp3');
+      audio.loop = true;
+      audio.volume = this.volume * 0.35;
+
+      audio.onerror = () => {
+        this.startSynthesizedAmbient();
+      };
+
+      const promise = audio.play();
+      if (promise !== undefined) {
+        promise.catch(() => {
+          // Autoplay policy fallback
+        });
+      }
+
+      this.bgAudio = audio;
     } catch (e) {
       this.startSynthesizedAmbient();
     }
   }
 
-  // 100% Reliable Multi-Target Volume Fader (Howl Instance + Sound IDs + HTML5 DOM Audio Nodes)
-  private fadeAmbientTo(targetVol: number, durationMs = 300) {
-    if (!this.ambient) return;
+  // Smooth Volume Fader directly on native HTMLAudioElement
+  private fadeBgTo(targetVol: number, durationMs = 250) {
+    if (!this.bgAudio) return;
 
     if (this.fadeInterval) {
       clearInterval(this.fadeInterval);
       this.fadeInterval = null;
     }
 
+    const startVol = this.bgAudio.volume;
     const startTime = Date.now();
-    const startVol = (this.ambient as any)._volume ?? 0.35;
 
     this.fadeInterval = setInterval(() => {
+      if (!this.bgAudio) {
+        if (this.fadeInterval) clearInterval(this.fadeInterval);
+        return;
+      }
+
       const elapsed = Date.now() - startTime;
       const progress = Math.min(1, elapsed / durationMs);
       const currentVol = Math.max(0, Math.min(1, startVol + (targetVol - startVol) * progress));
 
-      if (this.ambient) {
-        // 1. Update Howler default volume
-        this.ambient.volume(currentVol);
-
-        // 2. Update active sound IDs in Howler
-        const sounds = (this.ambient as any)._sounds || [];
-        sounds.forEach((s: any) => {
-          if (s._id !== undefined && this.ambient) {
-            try {
-              this.ambient.volume(currentVol, s._id);
-            } catch (e) {}
-          }
-          if (s._node && typeof s._node.volume === 'number') {
-            try {
-              s._node.volume = currentVol;
-            } catch (e) {}
-          }
-        });
-      }
-
-      // 3. Directly update any HTML5 <audio> DOM elements playing background music
-      if (typeof document !== 'undefined') {
-        const audioEls = Array.from(document.querySelectorAll('audio'));
-        audioEls.forEach((el) => {
-          if (el.src.includes('rayta-at-nineteen') || el.src.includes('ambient')) {
-            try {
-              el.volume = currentVol;
-            } catch (e) {}
-          }
-        });
-      }
+      try {
+        this.bgAudio.volume = currentVol;
+      } catch (e) {}
 
       if (progress >= 1) {
         if (this.fadeInterval) {
@@ -204,16 +193,20 @@ class SoundManager {
     }, 20);
   }
 
-  // Smart Audio Ducking: lowers global background song to 0 volume (silent) when voiceover plays
+  // Smart Audio Ducking: drops global background song volume to near silent (0.001) when voiceover plays
   duckAmbient() {
     this.isDucked = true;
-    this.fadeAmbientTo(0.0, 250);
+    if (this.bgAudio) {
+      this.fadeBgTo(0.001, 200);
+    }
   }
 
-  // Smart Audio Unducking: restores global background song volume to normal when voiceover ends/pauses
+  // Smart Audio Unducking: restores global background song volume to normal (35%) when voiceover ends/pauses
   unduckAmbient() {
     this.isDucked = false;
-    this.fadeAmbientTo(this.volume * 0.35, 450);
+    if (this.bgAudio) {
+      this.fadeBgTo(this.volume * 0.35, 400);
+    }
   }
 
   // Web Audio synthesized warm ambient synth pad loop fallback
@@ -249,22 +242,22 @@ class SoundManager {
   }
 
   stopAmbient() {
-    if (this.ambient) {
-      this.fadeAmbientTo(0, 800);
+    if (this.bgAudio) {
+      this.fadeBgTo(0, 600);
       setTimeout(() => {
-        if (this.ambient) {
-          this.ambient.stop();
-          this.ambient = null;
+        if (this.bgAudio) {
+          this.bgAudio.pause();
+          this.bgAudio = null;
         }
-      }, 850);
+      }, 650);
     }
   }
 
   setVolume(val: number) {
     this.volume = val;
     this.sfx.forEach((howl) => howl.volume(val));
-    if (this.ambient) {
-      this.fadeAmbientTo(this.isDucked ? 0.0 : val * 0.35, 200);
+    if (this.bgAudio) {
+      this.fadeBgTo(this.isDucked ? 0.001 : val * 0.35, 200);
     }
   }
 }
