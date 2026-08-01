@@ -12,6 +12,7 @@ class SoundManager {
   private audioCtx: AudioContext | null = null;
   private ambientOsc: OscillatorNode | null = null;
   private isDucked: boolean = false;
+  private fadeInterval: NodeJS.Timeout | null = null;
 
   private getAudioContext(): AudioContext {
     if (!this.audioCtx) {
@@ -129,58 +130,80 @@ class SoundManager {
     if (this.ambient) return;
 
     try {
-      // html5: false enables Web Audio API volume fade and ducking controls in Howler!
       this.ambient = new Howl({
         src: ['/audio/sfx/rayta-at-nineteen.mp3', CONFIG.assets.sfx.ambient],
         loop: true,
         volume: 0,
-        html5: false,
+        html5: true,
         onloaderror: () => {
           this.startSynthesizedAmbient();
         },
       });
       this.ambient.play();
-      this.ambient.fade(0, this.volume * 0.35, 2000);
+      this.fadeAmbientTo(this.volume * 0.35, 2000);
     } catch (e) {
       this.startSynthesizedAmbient();
     }
   }
 
+  // Direct Node + Howl Volume Fader (Works 100% reliably for HTML5 Audio & Web Audio)
+  private fadeAmbientTo(targetVol: number, durationMs = 400) {
+    if (!this.ambient) return;
+
+    if (this.fadeInterval) {
+      clearInterval(this.fadeInterval);
+      this.fadeInterval = null;
+    }
+
+    const sounds = (this.ambient as any)._sounds || [];
+    let startVol = this.ambient.volume();
+
+    // Check internal HTML5 audio element node volume if present
+    if (sounds.length > 0 && sounds[0]._node && typeof sounds[0]._node.volume === 'number') {
+      startVol = sounds[0]._node.volume;
+    }
+
+    const startTime = Date.now();
+
+    this.fadeInterval = setInterval(() => {
+      const elapsed = Date.now() - startTime;
+      const progress = Math.min(1, elapsed / durationMs);
+      const currentVol = Math.max(0, Math.min(1, startVol + (targetVol - startVol) * progress));
+
+      if (this.ambient) {
+        // Update Howler volume
+        this.ambient.volume(currentVol);
+
+        // Update active HTML5 Audio element node volumes directly
+        const activeSounds = (this.ambient as any)._sounds || [];
+        activeSounds.forEach((s: any) => {
+          if (s._node && typeof s._node.volume === 'number') {
+            try {
+              s._node.volume = currentVol;
+            } catch (e) {}
+          }
+        });
+      }
+
+      if (progress >= 1) {
+        if (this.fadeInterval) {
+          clearInterval(this.fadeInterval);
+          this.fadeInterval = null;
+        }
+      }
+    }, 20);
+  }
+
   // Smart Audio Ducking: lowers global background song to 2% volume when voiceover plays
   duckAmbient() {
     this.isDucked = true;
-    if (this.ambient) {
-      try {
-        const currentVol = this.ambient.volume();
-        this.ambient.fade(currentVol, 0.02, 300);
-        setTimeout(() => {
-          if (this.ambient && this.isDucked) {
-            this.ambient.volume(0.02);
-          }
-        }, 320);
-      } catch (e) {
-        if (this.ambient) this.ambient.volume(0.02);
-      }
-    }
+    this.fadeAmbientTo(0.015, 300);
   }
 
   // Smart Audio Unducking: restores global background song volume to normal when voiceover ends/pauses
   unduckAmbient() {
     this.isDucked = false;
-    if (this.ambient) {
-      try {
-        const targetVol = this.volume * 0.35;
-        const currentVol = this.ambient.volume();
-        this.ambient.fade(currentVol, targetVol, 400);
-        setTimeout(() => {
-          if (this.ambient && !this.isDucked) {
-            this.ambient.volume(targetVol);
-          }
-        }, 420);
-      } catch (e) {
-        if (this.ambient) this.ambient.volume(this.volume * 0.35);
-      }
-    }
+    this.fadeAmbientTo(this.volume * 0.35, 450);
   }
 
   // Web Audio synthesized warm ambient synth pad loop fallback
@@ -217,11 +240,13 @@ class SoundManager {
 
   stopAmbient() {
     if (this.ambient) {
-      this.ambient.fade(this.ambient.volume(), 0, 1000);
-      this.ambient.once('fade', () => {
-        this.ambient?.stop();
-        this.ambient = null;
-      });
+      this.fadeAmbientTo(0, 800);
+      setTimeout(() => {
+        if (this.ambient) {
+          this.ambient.stop();
+          this.ambient = null;
+        }
+      }, 850);
     }
   }
 
@@ -229,7 +254,7 @@ class SoundManager {
     this.volume = val;
     this.sfx.forEach((howl) => howl.volume(val));
     if (this.ambient) {
-      this.ambient.volume(this.isDucked ? 0.02 : val * 0.35);
+      this.fadeAmbientTo(this.isDucked ? 0.015 : val * 0.35, 200);
     }
   }
 }
