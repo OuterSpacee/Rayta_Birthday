@@ -11,6 +11,7 @@ class SoundManager {
   private volume: number = 0.5;
   private audioCtx: AudioContext | null = null;
   private ambientOsc: OscillatorNode | null = null;
+  private isDucked: boolean = false;
 
   private getAudioContext(): AudioContext {
     if (!this.audioCtx) {
@@ -28,7 +29,7 @@ class SoundManager {
       const h = new Howl({
         src: [CONFIG.assets.sfx[name]],
         volume: this.volume,
-        html5: true,
+        html5: false,
       });
       this.sfx.set(name, h);
     }
@@ -128,11 +129,12 @@ class SoundManager {
     if (this.ambient) return;
 
     try {
+      // html5: false enables Web Audio API volume fade and ducking controls in Howler!
       this.ambient = new Howl({
         src: ['/audio/sfx/rayta-at-nineteen.mp3', CONFIG.assets.sfx.ambient],
         loop: true,
         volume: 0,
-        html5: true,
+        html5: false,
         onloaderror: () => {
           this.startSynthesizedAmbient();
         },
@@ -144,17 +146,40 @@ class SoundManager {
     }
   }
 
-  // Smart Audio Ducking: lowers global background song when voiceover plays
+  // Smart Audio Ducking: lowers global background song to 2% volume when voiceover plays
   duckAmbient() {
+    this.isDucked = true;
     if (this.ambient) {
-      this.ambient.fade(this.ambient.volume(), 0.06, 400);
+      try {
+        const currentVol = this.ambient.volume();
+        this.ambient.fade(currentVol, 0.02, 300);
+        setTimeout(() => {
+          if (this.ambient && this.isDucked) {
+            this.ambient.volume(0.02);
+          }
+        }, 320);
+      } catch (e) {
+        if (this.ambient) this.ambient.volume(0.02);
+      }
     }
   }
 
-  // Smart Audio Unducking: restores global background song volume when voiceover ends/pauses
+  // Smart Audio Unducking: restores global background song volume to normal when voiceover ends/pauses
   unduckAmbient() {
+    this.isDucked = false;
     if (this.ambient) {
-      this.ambient.fade(this.ambient.volume(), this.volume * 0.35, 500);
+      try {
+        const targetVol = this.volume * 0.35;
+        const currentVol = this.ambient.volume();
+        this.ambient.fade(currentVol, targetVol, 400);
+        setTimeout(() => {
+          if (this.ambient && !this.isDucked) {
+            this.ambient.volume(targetVol);
+          }
+        }, 420);
+      } catch (e) {
+        if (this.ambient) this.ambient.volume(this.volume * 0.35);
+      }
     }
   }
 
@@ -204,7 +229,7 @@ class SoundManager {
     this.volume = val;
     this.sfx.forEach((howl) => howl.volume(val));
     if (this.ambient) {
-      this.ambient.volume(val * 0.35);
+      this.ambient.volume(this.isDucked ? 0.02 : val * 0.35);
     }
   }
 }
