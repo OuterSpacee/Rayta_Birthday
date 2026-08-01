@@ -249,19 +249,22 @@ export default function Hallway2D() {
                     alignItems: 'center',
                     gap: '6px',
                     fontSize: '11px',
-                    color: isVisited ? 'var(--accent-amber)' : 'var(--text-dim)',
+                    color: isVisited ? 'var(--accent-green)' : 'var(--text-dim)',
                   }}
                 >
-                  <div
-                    style={{
-                      width: '6px',
-                      height: '14px',
-                      background: isVisited ? 'var(--accent-amber)' : '#333',
-                      borderRadius: '1px',
-                      boxShadow: isVisited ? '0 0 8px var(--accent-amber)' : 'none',
-                    }}
-                  />
-                  <span>{isVisited ? 'LIT' : 'UNLIT'}</span>
+                  {isVisited ? (
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                      <span className="led led--green" />
+                      <span style={{ color: 'var(--accent-green)', fontWeight: 700, letterSpacing: '0.05em' }}>
+                        🔥 LIT CANDLE
+                      </span>
+                    </div>
+                  ) : (
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '4px', opacity: 0.6 }}>
+                      <span className="led led--off" />
+                      <span>UNLIT</span>
+                    </div>
+                  )}
                 </div>
               </div>
             );

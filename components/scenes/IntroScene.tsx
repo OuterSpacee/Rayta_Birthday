@@ -9,19 +9,24 @@ import { soundManager } from '@/components/audio/soundManager';
 import styles from './IntroScene.module.css';
 
 export function IntroScene() {
-  const scene = useBirthdayStore((s) => s.scene);
   const setScene = useBirthdayStore((s) => s.setScene);
   const setMicAllowed = useBirthdayStore((s) => s.setMicAllowed);
   const [extinguished, setExtinguished] = useState(false);
 
   const handleBlow = () => {
     if (extinguished) return;
-    soundManager.startAmbient(); // Unlock & start ambient music on user gesture
+    soundManager.startAmbient();
     soundManager.playSFX('candleBlow');
+
+    // 1. Extinguish the flame immediately so particle count drops & smoke rises on screen
     setExtinguished(true);
-    setScene('blow');
+
+    // 2. Wait 1.6s for full blow animation & smoke wisps, then transition to celebration
     setTimeout(() => {
-      setScene('celebration');
+      setScene('blow');
+      setTimeout(() => {
+        setScene('celebration');
+      }, 400);
     }, 1600);
   };
 
@@ -37,7 +42,7 @@ export function IntroScene() {
     startListening();
   };
 
-  const candleLit = scene === 'intro' && !extinguished;
+  const candleLit = !extinguished;
 
   return (
     <div className={`scene ${styles.container}`}>

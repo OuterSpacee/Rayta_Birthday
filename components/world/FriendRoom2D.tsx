@@ -120,7 +120,10 @@ export default function FriendRoom2D({ roomId }: FriendRoom2DProps) {
 
   useEffect(() => {
     soundManager.startAmbient();
-  }, []);
+    if (friend) {
+      visitRoom(friend.id);
+    }
+  }, [friend, visitRoom]);
 
   // Mouse Parallax 3D Tilt Illusion
   useEffect(() => {
