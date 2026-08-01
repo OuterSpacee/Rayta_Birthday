@@ -166,6 +166,7 @@ export default function FriendRoom2D({ roomId }: FriendRoom2DProps) {
 
     const sound = new Howl({
       src: [friend.audioSrc],
+      volume: 1.0,
       html5: true,
       onend: () => {
         setPlaying(false);

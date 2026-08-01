@@ -194,10 +194,10 @@ class SoundManager {
     }, 20);
   }
 
-  // Smart Audio Ducking: lowers global background song to 2% volume when voiceover plays
+  // Smart Audio Ducking: lowers global background song to near silent (0.3% volume) when voiceover plays
   duckAmbient() {
     this.isDucked = true;
-    this.fadeAmbientTo(0.015, 300);
+    this.fadeAmbientTo(0.003, 250);
   }
 
   // Smart Audio Unducking: restores global background song volume to normal when voiceover ends/pauses
