@@ -13,7 +13,7 @@ export default function Hallway2D() {
   const friends = CONFIG.friends;
   const isFinished = allRoomsVisited();
 
-  // Mouse Parallax 3D Tilt Illusion
+  // Mouse / Touch Parallax 3D Tilt Illusion
   const [tilt, setTilt] = useState({ x: 0, y: 0 });
 
   useEffect(() => {
@@ -38,7 +38,7 @@ export default function Hallway2D() {
     };
 
     window.addEventListener('mousemove', handleMouseMove);
-    window.addEventListener('touchmove', handleTouchMove);
+    window.addEventListener('touchmove', handleTouchMove, { passive: true });
     return () => {
       window.removeEventListener('mousemove', handleMouseMove);
       window.removeEventListener('touchmove', handleTouchMove);
@@ -57,7 +57,7 @@ export default function Hallway2D() {
       style={{
         position: 'relative',
         width: '100%',
-        height: '100%',
+        height: '100dvh',
         display: 'flex',
         flexDirection: 'column',
         alignItems: 'center',
@@ -65,7 +65,7 @@ export default function Hallway2D() {
         background: 'radial-gradient(ellipse at center, #1b1928 0%, #0a0a0e 85%)',
         perspective: '1200px',
         overflow: 'hidden',
-        padding: '20px',
+        padding: '12px',
       }}
     >
       {/* Full-Screen Dynamic Starfield Background */}
@@ -91,49 +91,52 @@ export default function Hallway2D() {
           position: 'relative',
           width: '100%',
           maxWidth: '1100px',
+          maxHeight: '100dvh',
           display: 'flex',
           flexDirection: 'column',
           alignItems: 'center',
-          gap: '24px',
+          gap: '16px',
           zIndex: 2,
           transform: `rotateX(${tilt.y}deg) rotateY(${tilt.x}deg)`,
           transition: 'transform 0.15s ease-out',
           transformStyle: 'preserve-3d',
+          padding: '8px',
         }}
       >
         {/* Header HUD Panel */}
-        <div className="panel" style={{ width: '100%', maxWidth: '800px', textAlign: 'center' }}>
-          <div className="panel-header" style={{ justifyContent: 'space-between' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+        <div className="panel" style={{ width: '100%', maxWidth: '800px', textAlign: 'center', padding: '12px 16px' }}>
+          <div className="panel-header" style={{ justifyContent: 'space-between', paddingBottom: '6px', marginBottom: '6px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
               <span className={`led ${isFinished ? 'led--green' : 'led--amber'}`} />
               <span>THE HALLWAY</span>
             </div>
-            <div style={{ color: 'var(--accent-amber)' }}>
+            <div style={{ color: 'var(--accent-amber)', fontSize: '11px' }}>
               VISITED: {roomsVisited.length} / {friends.length}
             </div>
           </div>
 
           <h2
             className="heading-display"
-            style={{ fontSize: 'clamp(20px, 4vw, 36px)', margin: '8px 0 4px' }}
+            style={{ fontSize: 'clamp(18px, 3.5vw, 32px)', margin: '4px 0 2px' }}
           >
             RAYTA&apos;S FRIEND ROOMS
           </h2>
-          <p className="text-mono" style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>
-            Choose a door to step inside and listen to their personal message.
+          <p className="text-mono" style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>
+            Choose a door to step inside and listen to their message.
           </p>
         </div>
 
-        {/* 10 Doors Grid Layout */}
+        {/* 12 Doors Grid Layout (Responsive on Mobile) */}
         <div
           style={{
             display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
-            gap: '16px',
+            gridTemplateColumns: 'repeat(auto-fill, minmax(clamp(130px, 28vw, 180px), 1fr))',
+            gap: '12px',
             width: '100%',
-            maxHeight: '60vh',
+            maxHeight: 'calc(100dvh - 160px)',
             overflowY: 'auto',
-            padding: '12px',
+            WebkitOverflowScrolling: 'touch',
+            padding: '8px 4px',
           }}
         >
           {friends.map((friend, idx) => {
@@ -149,31 +152,17 @@ export default function Hallway2D() {
                   background: 'var(--surface-panel)',
                   border: `2px solid ${isVisited ? 'var(--accent-green)' : 'var(--border-base)'}`,
                   borderRadius: '4px',
-                  padding: '16px 12px',
+                  padding: '12px 8px',
                   display: 'flex',
                   flexDirection: 'column',
                   alignItems: 'center',
-                  gap: '12px',
+                  gap: '8px',
                   cursor: 'pointer',
                   userSelect: 'none',
                   transition: 'all 0.2s ease',
                   boxShadow: isVisited
                     ? '0 0 15px rgba(0, 255, 102, 0.25)'
                     : 'inset 0 1px 0 rgba(255,255,255,0.05), 0 4px 12px rgba(0,0,0,0.5)',
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.borderColor = accent;
-                  e.currentTarget.style.transform = 'translateY(-4px)';
-                  e.currentTarget.style.boxShadow = `0 0 25px ${accent}40`;
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.borderColor = isVisited
-                    ? 'var(--accent-green)'
-                    : 'var(--border-base)';
-                  e.currentTarget.style.transform = 'translateY(0)';
-                  e.currentTarget.style.boxShadow = isVisited
-                    ? '0 0 15px rgba(0, 255, 102, 0.25)'
-                    : 'inset 0 1px 0 rgba(255,255,255,0.05), 0 4px 12px rgba(0,0,0,0.5)';
                 }}
               >
                 {/* Status LED & Room Number */}
@@ -183,7 +172,7 @@ export default function Hallway2D() {
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'space-between',
-                    fontSize: '11px',
+                    fontSize: '10px',
                     fontFamily: 'var(--font-mono)',
                     color: 'var(--text-dim)',
                   }}
@@ -195,8 +184,8 @@ export default function Hallway2D() {
                 {/* Styled 2D Door Illustration */}
                 <div
                   style={{
-                    width: '70px',
-                    height: '110px',
+                    width: '56px',
+                    height: '88px',
                     background: '#1a1826',
                     border: `2px solid ${accent}`,
                     borderRadius: '3px 3px 0 0',
@@ -209,8 +198,8 @@ export default function Hallway2D() {
                 >
                   <div
                     style={{
-                      width: '50px',
-                      height: '85px',
+                      width: '40px',
+                      height: '68px',
                       border: '1px solid rgba(255,255,255,0.1)',
                       borderRadius: '2px',
                     }}
@@ -218,10 +207,10 @@ export default function Hallway2D() {
                   <div
                     style={{
                       position: 'absolute',
-                      right: '8px',
-                      top: '55px',
-                      width: '8px',
-                      height: '8px',
+                      right: '6px',
+                      top: '44px',
+                      width: '6px',
+                      height: '6px',
                       borderRadius: '50%',
                       background: 'var(--accent-amber)',
                       boxShadow: '0 0 6px var(--accent-amber)',
@@ -233,10 +222,14 @@ export default function Hallway2D() {
                 <div
                   className="heading-retro"
                   style={{
-                    fontSize: '18px',
+                    fontSize: '15px',
                     color: isVisited ? 'var(--accent-green)' : accent,
                     textShadow: isVisited ? 'var(--glow-green-text)' : 'none',
                     textAlign: 'center',
+                    whiteSpace: 'nowrap',
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                    maxWidth: '100%',
                   }}
                 >
                   {friend.name.toUpperCase()}
@@ -247,20 +240,20 @@ export default function Hallway2D() {
                   style={{
                     display: 'flex',
                     alignItems: 'center',
-                    gap: '6px',
-                    fontSize: '11px',
+                    gap: '4px',
+                    fontSize: '10px',
                     color: isVisited ? 'var(--accent-green)' : 'var(--text-dim)',
                   }}
                 >
                   {isVisited ? (
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '3px' }}>
                       <span className="led led--green" />
                       <span style={{ color: 'var(--accent-green)', fontWeight: 700, letterSpacing: '0.05em' }}>
-                        🔥 LIT CANDLE
+                        🔥 LIT
                       </span>
                     </div>
                   ) : (
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '4px', opacity: 0.6 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '3px', opacity: 0.6 }}>
                       <span className="led led--off" />
                       <span>UNLIT</span>
                     </div>
@@ -272,7 +265,7 @@ export default function Hallway2D() {
         </div>
 
         {/* Footer Actions */}
-        <div style={{ display: 'flex', gap: '16px', marginTop: '8px' }}>
+        <div style={{ display: 'flex', gap: '12px', marginTop: '4px' }}>
           <button
             className={`btn-arcade ${isFinished ? 'btn-arcade--green' : ''}`}
             onClick={() => setScene('finale')}

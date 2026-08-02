@@ -21,7 +21,7 @@ function AvatarPlaceholder({ friend }: { friend: Friend }) {
       style={{
         position: 'relative',
         width: '100%',
-        height: '180px',
+        height: '160px',
         background: `radial-gradient(ellipse at center, ${accent}25 0%, #12111c 80%)`,
         border: `2px solid ${accent}`,
         borderRadius: '6px',
@@ -37,8 +37,8 @@ function AvatarPlaceholder({ friend }: { friend: Friend }) {
       <svg
         viewBox="0 0 100 100"
         style={{
-          width: '110px',
-          height: '110px',
+          width: '100px',
+          height: '100px',
           filter: `drop-shadow(0 0 8px ${accent})`,
         }}
       >
@@ -96,9 +96,9 @@ function AvatarPlaceholder({ friend }: { friend: Friend }) {
       <div
         className="heading-retro"
         style={{
-          fontSize: '15px',
+          fontSize: '14px',
           color: accent,
-          marginTop: '6px',
+          marginTop: '4px',
           letterSpacing: '0.1em',
           textShadow: `0 0 8px ${accent}`,
         }}
@@ -132,7 +132,7 @@ export default function FriendRoom2D({ roomId }: FriendRoom2DProps) {
     };
   }, [friend, visitRoom]);
 
-  // Mouse Parallax 3D Tilt Illusion
+  // Mouse & Touch Parallax 3D Tilt Illusion
   useEffect(() => {
     const handleMouseMove = (e: MouseEvent) => {
       const { innerWidth, innerHeight } = window;
@@ -141,8 +141,21 @@ export default function FriendRoom2D({ roomId }: FriendRoom2DProps) {
       setTilt({ x, y });
     };
 
+    const handleTouchMove = (e: TouchEvent) => {
+      if (!e.touches[0]) return;
+      const touch = e.touches[0];
+      const { innerWidth, innerHeight } = window;
+      const x = (touch.clientX / innerWidth - 0.5) * 12;
+      const y = (touch.clientY / innerHeight - 0.5) * -8;
+      setTilt({ x, y });
+    };
+
     window.addEventListener('mousemove', handleMouseMove);
-    return () => window.removeEventListener('mousemove', handleMouseMove);
+    window.addEventListener('touchmove', handleTouchMove, { passive: true });
+    return () => {
+      window.removeEventListener('mousemove', handleMouseMove);
+      window.removeEventListener('touchmove', handleTouchMove);
+    };
   }, []);
 
   // Cleanup audio on unmount
@@ -199,7 +212,7 @@ export default function FriendRoom2D({ roomId }: FriendRoom2DProps) {
       style={{
         position: 'relative',
         width: '100%',
-        height: '100%',
+        height: '100dvh',
         display: 'flex',
         flexDirection: 'column',
         alignItems: 'center',
@@ -207,7 +220,7 @@ export default function FriendRoom2D({ roomId }: FriendRoom2DProps) {
         background: `radial-gradient(ellipse at center, ${wallColor} 0%, #0d0c14 90%)`,
         perspective: '1000px',
         overflow: 'hidden',
-        padding: '24px',
+        padding: '12px',
       }}
     >
       {/* Dynamic Starfield Background tinted with Friend Accent */}
@@ -219,31 +232,35 @@ export default function FriendRoom2D({ roomId }: FriendRoom2DProps) {
           position: 'relative',
           width: '100%',
           maxWidth: '920px',
+          maxHeight: '100dvh',
           display: 'flex',
           flexDirection: 'column',
           alignItems: 'center',
-          gap: '20px',
+          gap: '14px',
           zIndex: 2,
           transform: `rotateX(${tilt.y}deg) rotateY(${tilt.x}deg)`,
           transition: 'transform 0.15s ease-out',
           transformStyle: 'preserve-3d',
+          overflowY: 'auto',
+          WebkitOverflowScrolling: 'touch',
+          padding: '4px',
         }}
       >
         {/* Room Header Panel */}
-        <div className="panel" style={{ width: '100%', borderColor: accentColor }}>
-          <div className="panel-header" style={{ justifyContent: 'space-between' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+        <div className="panel" style={{ width: '100%', borderColor: accentColor, padding: '12px 16px' }}>
+          <div className="panel-header" style={{ justifyContent: 'space-between', paddingBottom: '6px', marginBottom: '6px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
               <span className={`led ${playing ? 'led--green' : 'led--amber'}`} />
-              <span>ROOM: {friend.name.toUpperCase()}</span>
+              <span style={{ fontSize: '11px' }}>ROOM: {friend.name.toUpperCase()}</span>
             </div>
-            <button className="btn-ghost" onClick={handleExit}>
-              ◀ EXIT ROOM
+            <button className="btn-ghost" onClick={handleExit} style={{ padding: '4px 10px', fontSize: '11px' }}>
+              ◀ EXIT
             </button>
           </div>
 
           <h2
             className="heading-display"
-            style={{ color: accentColor, fontSize: 'clamp(22px, 5vw, 40px)', margin: '4px 0' }}
+            style={{ color: accentColor, fontSize: 'clamp(18px, 4.5vw, 36px)', margin: '2px 0' }}
           >
             {friend.name}&apos;S SANCTUARY
           </h2>
@@ -253,8 +270,8 @@ export default function FriendRoom2D({ roomId }: FriendRoom2DProps) {
         <div
           style={{
             display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))',
-            gap: '20px',
+            gridTemplateColumns: 'repeat(auto-fit, minmax(clamp(260px, 85vw, 340px), 1fr))',
+            gap: '14px',
             width: '100%',
           }}
         >
@@ -266,13 +283,13 @@ export default function FriendRoom2D({ roomId }: FriendRoom2DProps) {
               flexDirection: 'column',
               alignItems: 'center',
               justifyContent: 'center',
-              gap: '20px',
-              padding: '28px 20px',
+              gap: '16px',
+              padding: '20px 16px',
               background: 'var(--surface-raised)',
               border: `2px solid ${accentColor}60`,
             }}
           >
-            <div className="panel-header" style={{ width: '100%' }}>
+            <div className="panel-header" style={{ width: '100%', paddingBottom: '6px', marginBottom: '6px' }}>
               <span className={`led ${playing ? 'led--green' : 'led--off'}`} />
               <span>VINTAGE GRAMOPHONE PLAYER</span>
             </div>
@@ -281,8 +298,8 @@ export default function FriendRoom2D({ roomId }: FriendRoom2DProps) {
             <div
               style={{
                 position: 'relative',
-                width: '190px',
-                height: '190px',
+                width: '160px',
+                height: '160px',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
@@ -292,8 +309,8 @@ export default function FriendRoom2D({ roomId }: FriendRoom2DProps) {
               <div
                 style={{
                   position: 'relative',
-                  width: '170px',
-                  height: '170px',
+                  width: '145px',
+                  height: '145px',
                   borderRadius: '50%',
                   background:
                     'repeating-radial-gradient(circle at center, #111 0px, #111 4px, #262626 5px, #111 7px)',
@@ -311,8 +328,8 @@ export default function FriendRoom2D({ roomId }: FriendRoom2DProps) {
                 <div
                   style={{
                     position: 'relative',
-                    width: '72px',
-                    height: '72px',
+                    width: '64px',
+                    height: '64px',
                     borderRadius: '50%',
                     background: `radial-gradient(circle, ${accentColor} 0%, #111 100%)`,
                     border: '2px solid #111',
@@ -329,12 +346,12 @@ export default function FriendRoom2D({ roomId }: FriendRoom2DProps) {
                   <div
                     style={{
                       fontFamily: 'var(--font-display)',
-                      fontSize: '9px',
+                      fontSize: '8px',
                       textTransform: 'uppercase',
                       letterSpacing: '0.05em',
                       color: '#000',
                       fontWeight: 'bold',
-                      maxWidth: '62px',
+                      maxWidth: '54px',
                       overflow: 'hidden',
                       textOverflow: 'ellipsis',
                       whiteSpace: 'nowrap',
@@ -344,7 +361,7 @@ export default function FriendRoom2D({ roomId }: FriendRoom2DProps) {
                   </div>
                   <div
                     style={{
-                      fontSize: '7px',
+                      fontSize: '6px',
                       fontFamily: 'var(--font-mono)',
                       color: '#111',
                     }}
@@ -354,8 +371,8 @@ export default function FriendRoom2D({ roomId }: FriendRoom2DProps) {
                   {/* Spindle Hole */}
                   <div
                     style={{
-                      width: '10px',
-                      height: '10px',
+                      width: '8px',
+                      height: '8px',
                       borderRadius: '50%',
                       background: '#111',
                       marginTop: '2px',
@@ -368,10 +385,10 @@ export default function FriendRoom2D({ roomId }: FriendRoom2DProps) {
               <div
                 style={{
                   position: 'absolute',
-                  right: '10px',
-                  top: '10px',
-                  width: '60px',
-                  height: '90px',
+                  right: '8px',
+                  top: '8px',
+                  width: '50px',
+                  height: '75px',
                   pointerEvents: 'none',
                   transform: playing ? 'rotate(18deg)' : 'rotate(0deg)',
                   transformOrigin: 'top right',
@@ -384,8 +401,8 @@ export default function FriendRoom2D({ roomId }: FriendRoom2DProps) {
                     position: 'absolute',
                     top: 0,
                     right: 0,
-                    width: '18px',
-                    height: '18px',
+                    width: '16px',
+                    height: '16px',
                     borderRadius: '50%',
                     background: accentColor,
                     boxShadow: `0 0 8px ${accentColor}`,
@@ -395,10 +412,10 @@ export default function FriendRoom2D({ roomId }: FriendRoom2DProps) {
                 <div
                   style={{
                     position: 'absolute',
-                    top: '10px',
-                    right: '8px',
-                    width: '4px',
-                    height: '65px',
+                    top: '8px',
+                    right: '6px',
+                    width: '3px',
+                    height: '55px',
                     background: 'linear-gradient(to bottom, #ccc, #888)',
                     borderRadius: '2px',
                     transform: 'rotate(-25deg)',
@@ -412,9 +429,9 @@ export default function FriendRoom2D({ roomId }: FriendRoom2DProps) {
             <button
               className={`btn-arcade ${playing ? 'btn-arcade--green' : ''}`}
               onClick={handlePlayVoice}
-              style={{ width: '100%', maxWidth: '260px' }}
+              style={{ width: '100%', maxWidth: '240px' }}
             >
-              {playing ? '⏸ PAUSE RECORDING' : '▶ PLAY MESSAGE'}
+              {playing ? '⏸ PAUSE MESSAGE' : '▶ PLAY MESSAGE'}
             </button>
           </div>
 
@@ -425,13 +442,13 @@ export default function FriendRoom2D({ roomId }: FriendRoom2DProps) {
               display: 'flex',
               flexDirection: 'column',
               alignItems: 'center',
-              gap: '16px',
-              padding: '24px',
+              gap: '14px',
+              padding: '16px',
               background: 'var(--surface-raised)',
               border: `1px solid ${accentColor}50`,
             }}
           >
-            <div className="panel-header" style={{ width: '100%' }}>
+            <div className="panel-header" style={{ width: '100%', paddingBottom: '6px', marginBottom: '6px' }}>
               <span className="led led--amber" />
               <span>PHOTO & KEEPSAKE</span>
             </div>
@@ -444,11 +461,11 @@ export default function FriendRoom2D({ roomId }: FriendRoom2DProps) {
               <div
                 style={{
                   fontFamily: 'var(--font-mono-alt)',
-                  fontSize: '14px',
+                  fontSize: '13px',
                   color: accentColor,
                   background: `${accentColor}10`,
                   border: `1px solid ${accentColor}30`,
-                  padding: '12px 16px',
+                  padding: '10px 14px',
                   borderRadius: '2px',
                   textAlign: 'center',
                   width: '100%',
@@ -464,7 +481,7 @@ export default function FriendRoom2D({ roomId }: FriendRoom2DProps) {
         <button
           className="btn-arcade"
           onClick={handleExit}
-          style={{ marginTop: '4px' }}
+          style={{ marginTop: '2px' }}
         >
           RETURN TO HALLWAY
         </button>

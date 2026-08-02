@@ -17,7 +17,20 @@ const SCALE_FACTORS = {
 export function CandleFlame({ lit, onBlowOut, size = 'md' }: CandleFlameProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [showSmoke, setShowSmoke] = useState(false);
-  const scale = SCALE_FACTORS[size];
+  const [scale, setScale] = useState(SCALE_FACTORS[size]);
+
+  useEffect(() => {
+    const handleResize = () => {
+      if (typeof window !== 'undefined' && window.innerWidth < 640) {
+        setScale(SCALE_FACTORS[size] * 0.72);
+      } else {
+        setScale(SCALE_FACTORS[size]);
+      }
+    };
+    handleResize();
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, [size]);
 
   useEffect(() => {
     if (!lit) {

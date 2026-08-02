@@ -13,6 +13,28 @@ class SoundManager {
   private ambientOsc: OscillatorNode | null = null;
   private isDucked: boolean = false;
   private fadeInterval: any = null;
+  private userGestureAttached: boolean = false;
+
+  constructor() {
+    this.attachUserGestureListener();
+  }
+
+  private attachUserGestureListener() {
+    if (typeof window === 'undefined') return;
+
+    const unlockAudio = () => {
+      if (this.audioCtx && this.audioCtx.state === 'suspended') {
+        this.audioCtx.resume();
+      }
+      if (this.bgAudio && this.bgAudio.paused) {
+        this.bgAudio.play().catch(() => {});
+      }
+    };
+
+    window.addEventListener('touchstart', unlockAudio, { passive: true, once: false });
+    window.addEventListener('click', unlockAudio, { passive: true, once: false });
+    this.userGestureAttached = true;
+  }
 
   private getAudioContext(): AudioContext {
     if (!this.audioCtx) {
@@ -139,7 +161,7 @@ class SoundManager {
     try {
       const audio = new Audio('/audio/sfx/rayta-at-nineteen.mp3');
       audio.loop = true;
-      audio.volume = this.volume * 0.35;
+      audio.volume = this.isDucked ? 0.02 : this.volume * 0.35;
 
       audio.onerror = () => {
         this.startSynthesizedAmbient();
@@ -148,7 +170,7 @@ class SoundManager {
       const promise = audio.play();
       if (promise !== undefined) {
         promise.catch(() => {
-          // Autoplay policy fallback
+          // Autoplay policy fallback (will play on first touchstart)
         });
       }
 
@@ -257,7 +279,7 @@ class SoundManager {
     this.volume = val;
     this.sfx.forEach((howl) => howl.volume(val));
     if (this.bgAudio) {
-      this.fadeBgTo(this.isDucked ? 0.001 : val * 0.35, 200);
+      this.fadeBgTo(this.isDucked ? 0.02 : val * 0.35, 200);
     }
   }
 }
