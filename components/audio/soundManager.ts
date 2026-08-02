@@ -10,6 +10,8 @@ class SoundManager {
   private bgAudio: HTMLAudioElement | null = null;
   private volume: number = 0.5;
   private audioCtx: AudioContext | null = null;
+  private bgGainNode: GainNode | null = null;
+  private bgMediaSource: MediaElementAudioSourceNode | null = null;
   private ambientOsc: OscillatorNode | null = null;
   private isDucked: boolean = false;
   private fadeInterval: any = null;
@@ -26,8 +28,11 @@ class SoundManager {
       if (this.audioCtx && this.audioCtx.state === 'suspended') {
         this.audioCtx.resume();
       }
-      if (this.bgAudio && this.bgAudio.paused) {
-        this.bgAudio.play().catch(() => {});
+      if (this.bgAudio) {
+        this.setupWebAudioDucking();
+        if (this.bgAudio.paused) {
+          this.bgAudio.play().catch(() => {});
+        }
       }
     };
 
@@ -45,6 +50,23 @@ class SoundManager {
       this.audioCtx.resume();
     }
     return this.audioCtx;
+  }
+
+  private setupWebAudioDucking() {
+    if (this.bgMediaSource || !this.bgAudio) return;
+
+    try {
+      const ctx = this.getAudioContext();
+      this.bgGainNode = ctx.createGain();
+      const initialGain = this.isDucked ? 0.02 : this.volume * 0.35;
+      this.bgGainNode.gain.setValueAtTime(initialGain, ctx.currentTime);
+
+      this.bgMediaSource = ctx.createMediaElementSource(this.bgAudio);
+      this.bgMediaSource.connect(this.bgGainNode);
+      this.bgGainNode.connect(ctx.destination);
+    } catch (e) {
+      // Ignore if CORS or already connected
+    }
   }
 
   private getHowl(name: SfxName): Howl {
@@ -161,6 +183,7 @@ class SoundManager {
     try {
       const audio = new Audio('/audio/sfx/rayta-at-nineteen.mp3');
       audio.loop = true;
+      audio.crossOrigin = 'anonymous';
       audio.volume = this.isDucked ? 0.02 : this.volume * 0.35;
 
       audio.onerror = () => {
@@ -175,23 +198,33 @@ class SoundManager {
       }
 
       this.bgAudio = audio;
+      this.setupWebAudioDucking();
     } catch (e) {
       this.startSynthesizedAmbient();
     }
   }
 
-  // Smooth Volume Fader directly on native HTMLAudioElement
+  // Smooth Volume Fader for both HTMLAudioElement & Web Audio GainNode (100% Mobile & Desktop compatible)
   private fadeBgTo(targetVol: number, durationMs = 250) {
-    if (!this.bgAudio) return;
-
     if (this.fadeInterval) {
       clearInterval(this.fadeInterval);
       this.fadeInterval = null;
     }
 
-    const startVol = this.bgAudio.volume;
+    const startVol = this.bgAudio ? this.bgAudio.volume : targetVol;
     const startTime = Date.now();
 
+    // 1. Mobile Web Audio GainNode ducking (bypasses iOS Safari volume lock)
+    if (this.bgGainNode && this.audioCtx) {
+      try {
+        const now = this.audioCtx.currentTime;
+        this.bgGainNode.gain.cancelScheduledValues(now);
+        this.bgGainNode.gain.setValueAtTime(this.bgGainNode.gain.value, now);
+        this.bgGainNode.gain.linearRampToValueAtTime(targetVol, now + durationMs / 1000);
+      } catch (e) {}
+    }
+
+    // 2. Desktop HTMLAudioElement volume property fallback
     this.fadeInterval = setInterval(() => {
       if (!this.bgAudio) {
         if (this.fadeInterval) clearInterval(this.fadeInterval);
@@ -218,17 +251,13 @@ class SoundManager {
   // Smart Audio Ducking: lowers global background song to very low 2% volume inside any room
   duckAmbient() {
     this.isDucked = true;
-    if (this.bgAudio) {
-      this.fadeBgTo(0.02, 250);
-    }
+    this.fadeBgTo(0.02, 250);
   }
 
   // Smart Audio Unducking: restores global background song volume to normal 35% in hallway & main scenes
   unduckAmbient() {
     this.isDucked = false;
-    if (this.bgAudio) {
-      this.fadeBgTo(this.volume * 0.35, 400);
-    }
+    this.fadeBgTo(this.volume * 0.35, 400);
   }
 
   // Web Audio synthesized warm ambient synth pad loop fallback
@@ -278,9 +307,7 @@ class SoundManager {
   setVolume(val: number) {
     this.volume = val;
     this.sfx.forEach((howl) => howl.volume(val));
-    if (this.bgAudio) {
-      this.fadeBgTo(this.isDucked ? 0.02 : val * 0.35, 200);
-    }
+    this.fadeBgTo(this.isDucked ? 0.02 : val * 0.35, 200);
   }
 }
 
